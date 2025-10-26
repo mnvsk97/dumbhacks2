@@ -202,33 +202,26 @@ function MemeGeneratorContent() {
                       {meme.confidence}% Confident
                     </div>
                     
-                    <div className="bg-slate-900 rounded-lg overflow-hidden border-2 border-slate-300 aspect-square flex items-center justify-center relative">
+                    <div className="bg-slate-100 rounded-lg overflow-hidden border-2 border-slate-300 aspect-square flex items-center justify-center">
                       {meme.image_url ? (
-                        <>
-                          <img 
-                            src={meme.image_url} 
-                            alt="Generated meme" 
-                            className="w-full h-full object-cover"
-                          />
-                          {/* Caption at Bottom - Classic Meme Style */}
-                          <div className="absolute bottom-0 left-0 right-0 p-6 pointer-events-none">
-                            <p 
-                              className="text-white font-black text-2xl md:text-3xl uppercase leading-tight text-center"
-                              style={{
-                                textShadow: '3px 3px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 3px 3px 6px rgba(0,0,0,0.8)',
-                                fontFamily: 'Impact, Arial Black, sans-serif'
-                              }}
-                            >
-                              {meme.caption}
-                            </p>
-                          </div>
-                        </>
+                        <img 
+                          src={meme.image_url} 
+                          alt="Generated meme" 
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
                         <div className="text-center p-8">
                           <div className="text-6xl mb-4">🎨</div>
-                          <div className="text-white font-bold">Generating...</div>
+                          <div className="text-gray-600 font-bold">Generating...</div>
                         </div>
                       )}
+                    </div>
+                    
+                    {/* Caption Below Image */}
+                    <div className="mt-3 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                      <p className="text-slate-900 text-center font-semibold text-base leading-snug">
+                        &quot;{meme.caption}&quot;
+                      </p>
                     </div>
                   </div>
 
