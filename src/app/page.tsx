@@ -1,171 +1,296 @@
 "use client";
 
-import { useCoAgent, useCopilotAction } from "@copilotkit/react-core";
+import { useCoAgent, useCopilotAction, useCopilotChat } from "@copilotkit/react-core";
 import { CopilotKitCSSProperties, CopilotSidebar } from "@copilotkit/react-ui";
 import { useState } from "react";
 
-export default function CopilotKitPage() {
-  const [themeColor, setThemeColor] = useState("#6366f1");
-
-  // 🪁 Frontend Actions: https://docs.copilotkit.ai/guides/frontend-actions
-  useCopilotAction({
-    name: "setThemeColor",
-    parameters: [{
-      name: "themeColor",
-      description: "The theme color to set. Make sure to pick nice colors.",
-      required: true, 
-    }],
-    handler({ themeColor }) {
-      setThemeColor(themeColor);
-    },
-  });
-
+export default function MemeGeneratorPage() {
   return (
-    <main style={{ "--copilot-kit-primary-color": themeColor } as CopilotKitCSSProperties}>
-      <YourMainContent themeColor={themeColor} />
+    <main style={{ "--copilot-kit-primary-color": "#6366f1" } as CopilotKitCSSProperties}>
+      <MemeGeneratorContent />
       <CopilotSidebar
         clickOutsideToClose={false}
         defaultOpen={true}
         labels={{
-          title: "Popup Assistant",
-          initial: "👋 Hi, there! You're chatting with an agent. This agent comes with a few tools to get you started.\n\nFor example you can try:\n- **Frontend Tools**: \"Set the theme to orange\"\n- **Shared State**: \"Write a proverb about AI\"\n- **Generative UI**: \"Get the weather in SF\"\n\nAs you interact with the agent, you'll see the UI update in real-time to reflect the agent's **state**, **tool calls**, and **progress**."
+          title: "AI Meme Assistant",
+          initial: "🤖 Hi! I'm an AI that thinks it understands humor.\n\n**I can generate memes!**\n\nJust tell me:\n- What topic you want a meme about\n- Pick a 'humor mode'\n\nI'll generate a meme and explain why it's funny.\n\nYou can also chat with me for custom memes!"
         }}
       />
     </main>
   );
 }
 
-// State of the agent, make sure this aligns with your agent's state.
+// State of the agent
 type AgentState = {
-  proverbs: string[];
+  topic: string;
+  humor_mode: string;
+  memes: Array<{
+    image_url: string;
+    caption: string;
+    explanation: string;
+    confidence: number;
+    rating?: number;
+  }>;
 }
 
-function YourMainContent({ themeColor }: { themeColor: string }) {
-  // 🪁 Shared State: https://docs.copilotkit.ai/coagents/shared-state
-  const { state, setState } = useCoAgent<AgentState>({
-    name: "sample_agent",
-    initialState: {
-      proverbs: [
-        "CopilotKit may be new, but its the best thing since sliced bread.",
-      ],
-    },
-  })
+function MemeGeneratorContent() {
+  const [topic, setTopic] = useState("");
+  const [humorMode, setHumorMode] = useState("trying_too_hard");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [memes, setMemes] = useState<Array<{
+    image_url: string;
+    caption: string;
+    explanation: string;
+    confidence: number;
+    rating?: number;
+  }>>([]);
 
-  // 🪁 Frontend Actions: https://docs.copilotkit.ai/coagents/frontend-actions
+  // Chat with agent (keep for sidebar)
+  const { append } = useCopilotChat();
+
+  // Shared State with agent (keep for sidebar)
+  const { state, setState } = useCoAgent<AgentState>({
+    name: "meme_agent",
+    initialState: {
+      topic: "",
+      humor_mode: "trying_too_hard",
+      memes: [],
+    },
+  });
+
+  // Frontend Action: Add generated meme
   useCopilotAction({
-    name: "addProverb",
-    parameters: [{
-      name: "proverb",
-      description: "The proverb to add. Make it witty, short and concise.",
-      required: true,
-    }],
-    handler: ({ proverb }) => {
+    name: "addMeme",
+    parameters: [
+      { name: "image_url", description: "The URL of the generated meme image", required: true },
+      { name: "caption", description: "The meme caption/text", required: true },
+      { name: "explanation", description: "AI's explanation of why it's funny", required: true },
+      { name: "confidence", description: "How confident the AI is (1-100)", required: true },
+    ],
+    handler: ({ image_url, caption, explanation, confidence }) => {
       setState({
         ...state,
-        proverbs: [...(state.proverbs || []), proverb],
+        memes: [...(state.memes || []), { image_url, caption, explanation, confidence, rating: 0 }],
       });
+      setIsGenerating(false);
     },
   });
 
-  //🪁 Generative UI: https://docs.copilotkit.ai/coagents/generative-ui
-  useCopilotAction({
-    name: "get_weather",
-    description: "Get the weather for a given location.",
-    available: "disabled",
-    parameters: [
-      { name: "location", type: "string", required: true },
-    ],
-    render: ({ args }) => {
-      return <WeatherCard location={args.location} themeColor={themeColor} />
-    },
-  });
+  const handleGenerate = async () => {
+    if (!topic.trim()) return;
+    
+    setIsGenerating(true);
+    
+    try {
+      // Call our simple API
+      const response = await fetch('/api/generate-meme', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic, humor_mode: humorMode }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success && data.meme) {
+        // Add the new meme to local state
+        setMemes(prev => [...prev, { ...data.meme, rating: 0 }]);
+      }
+    } catch (error) {
+      console.error("Error generating meme:", error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleRating = (index: number, rating: number) => {
+    const updatedMemes = [...memes];
+    updatedMemes[index] = { ...updatedMemes[index], rating };
+    setMemes(updatedMemes);
+  };
+
+  const humorModes = [
+    { id: "trying_too_hard", label: "🤓 Trying Too Hard", desc: "Maximum effort, minimum funny" },
+    { id: "totally_confused", label: "😵 Totally Confused", desc: "What even is humor?" },
+    { id: "accidentally_funny", label: "🎲 Accidentally Funny", desc: "So bad it's good" },
+    { id: "maximum_chaos", label: "🌪️ Maximum Chaos", desc: "Unleash the weird" },
+  ];
 
   return (
-    <div
-      style={{ backgroundColor: themeColor }}
-      className="h-screen w-screen flex justify-center items-center flex-col transition-colors duration-300"
-    >
-      <div className="bg-white/20 backdrop-blur-md p-8 rounded-2xl shadow-xl max-w-2xl w-full">
-        <h1 className="text-4xl font-bold text-white mb-2 text-center">Proverbs</h1>
-        <p className="text-gray-200 text-center italic mb-6">This is a demonstrative page, but it could be anything you want! 🪁</p>
-        <hr className="border-white/20 my-6" />
-        <div className="flex flex-col gap-3">
-          {state.proverbs?.map((proverb, index) => (
-            <div 
-              key={index} 
-              className="bg-white/15 p-4 rounded-xl text-white relative group hover:bg-white/20 transition-all"
-            >
-              <p className="pr-8">{proverb}</p>
-              <button 
-                onClick={() => setState({
-                  ...state,
-                  proverbs: (state.proverbs || []).filter((_, i) => i !== index),
-                })}
-                className="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-opacity 
-                  bg-red-500 hover:bg-red-600 text-white rounded-full h-6 w-6 flex items-center justify-center"
-              >
-                ✕
-              </button>
+    <div className="min-h-screen w-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900 p-6">
+      <div className="max-w-6xl mx-auto">
+        
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-5xl font-bold text-white mb-3">
+            AI Meme Generator
+          </h1>
+          <p className="text-xl text-indigo-200 mb-2">
+            Powered by Replicate AI
+          </p>
+          <p className="text-slate-300 text-sm">
+            Generate creative memes with AI-powered humor
+          </p>
+          <p className="text-slate-400 text-xs mt-2">
+            A DUMB HACKS 2 Project
+          </p>
+        </div>
+
+        {/* Input Section */}
+        <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 border border-slate-200">
+          <div className="mb-6">
+            <label className="block text-slate-700 text-lg font-semibold mb-2">
+              Topic
+            </label>
+            <input
+              type="text"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              placeholder="e.g., Monday mornings, debugging code, coffee..."
+              className="w-full p-3 border-2 border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+            />
+          </div>
+
+          {/* Humor Mode Selection */}
+          <div className="mb-6">
+            <label className="block text-slate-700 text-lg font-semibold mb-2">
+              Humor Style
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {humorModes.map((mode) => (
+                <button
+                  key={mode.id}
+                  onClick={() => setHumorMode(mode.id)}
+                  className={`p-3 rounded-lg border-2 transition-all text-left ${
+                    humorMode === mode.id
+                      ? 'bg-indigo-600 border-indigo-600 text-white shadow-md'
+                      : 'bg-white border-slate-300 text-slate-700 hover:border-indigo-400'
+                  }`}
+                >
+                  <div className="font-semibold">{mode.label}</div>
+                  <div className="text-sm opacity-75">{mode.desc}</div>
+                </button>
+              ))}
             </div>
-          ))}
+          </div>
+
+          {/* Generate Button */}
+          <button
+            onClick={handleGenerate}
+            disabled={!topic || isGenerating}
+            className="w-full py-4 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-lg font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg"
+          >
+            {isGenerating ? '⏳ Generating...' : 'Generate Meme'}
+          </button>
         </div>
-        {state.proverbs?.length === 0 && <p className="text-center text-white/80 italic my-8">
-          No proverbs yet. Ask the assistant to add some!
-        </p>}
+
+        {/* Generated Memes */}
+        {memes && memes.length > 0 && (
+          <div className="space-y-6">
+            <h2 className="text-3xl font-bold text-white text-center mb-6">
+              Generated Memes
+            </h2>
+            {memes.map((meme, index) => (
+              <div
+                key={index}
+                className="bg-white rounded-2xl shadow-xl p-6 border border-slate-200"
+              >
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Meme Image */}
+                  <div className="relative">
+                    <div className="bg-slate-100 rounded-lg overflow-hidden border-2 border-slate-300 aspect-square flex items-center justify-center">
+                      {meme.image_url ? (
+                        <img 
+                          src={meme.image_url} 
+                          alt="Generated meme" 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="text-center p-8">
+                          <div className="text-6xl mb-4">🎨</div>
+                          <div className="text-gray-600 font-bold">Meme Image</div>
+                          <div className="text-sm text-gray-500 mt-2">{meme.caption}</div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Confidence Badge */}
+                    <div className="absolute -top-3 -right-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2 rounded-lg font-semibold text-sm shadow-lg">
+                      {meme.confidence}% Confident
+                    </div>
+                  </div>
+
+                  {/* Meme Details */}
+                  <div className="flex flex-col justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-700 mb-2">
+                        Caption
+                      </h3>
+                      <p className="text-lg font-medium text-slate-900 bg-slate-50 p-4 rounded-lg border border-slate-200 mb-6">
+                        &quot;{meme.caption}&quot;
+                      </p>
+
+                      <h3 className="text-lg font-semibold text-slate-700 mb-2">
+                        AI Explanation
+                      </h3>
+                      <p className="text-slate-700 bg-indigo-50 p-4 rounded-lg border border-indigo-200 italic text-sm leading-relaxed">
+                        {meme.explanation}
+                      </p>
+                    </div>
+
+                    {/* Rating */}
+                    <div className="mt-6">
+                      <h3 className="text-sm font-semibold text-slate-700 mb-2">
+                        Rate this meme
+                      </h3>
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            onClick={() => handleRating(index, star)}
+                            className={`text-3xl transition-transform hover:scale-110 ${
+                              (meme.rating || 0) >= star ? 'opacity-100' : 'opacity-25'
+                            }`}
+                          >
+                            ⭐
+                          </button>
+                        ))}
+                      </div>
+                      {meme.rating && meme.rating < 3 && (
+                        <p className="text-xs text-slate-500 mt-2 italic">
+                          AI: &quot;I&apos;ll try different humor next time!&quot;
+                        </p>
+                      )}
+                      {meme.rating && meme.rating >= 4 && (
+                        <p className="text-xs text-slate-500 mt-2 italic">
+                          AI: &quot;Glad you enjoyed it!&quot;
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Empty State */}
+        {(!memes || memes.length === 0) && (
+          <div className="bg-white rounded-2xl shadow-xl p-12 text-center border border-slate-200">
+            <div className="text-6xl mb-4">🤖</div>
+            <h3 className="text-2xl font-semibold text-slate-800 mb-3">
+              Ready to generate memes?
+            </h3>
+            <p className="text-slate-600">
+              Enter a topic above and let AI create something interesting!
+            </p>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="mt-6 text-center text-slate-400 text-xs">
+          <p>Powered by Replicate + Digital Ocean</p>
+        </div>
       </div>
     </div>
-  );
-}
-
-// Simple sun icon for the weather card
-function SunIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-14 h-14 text-yellow-200">
-      <circle cx="12" cy="12" r="5" />
-      <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" strokeWidth="2" stroke="currentColor" />
-    </svg>
-  );
-}
-
-// Weather card component where the location and themeColor are based on what the agent
-// sets via tool calls.
-function WeatherCard({ location, themeColor }: { location?: string, themeColor: string }) {
-  return (
-    <div
-    style={{ backgroundColor: themeColor }}
-    className="rounded-xl shadow-xl mt-6 mb-4 max-w-md w-full"
-  >
-    <div className="bg-white/20 p-4 w-full">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-xl font-bold text-white capitalize">{location}</h3>
-          <p className="text-white">Current Weather</p>
-        </div>
-        <SunIcon />
-      </div>
-      
-      <div className="mt-4 flex items-end justify-between">
-        <div className="text-3xl font-bold text-white">70°</div>
-        <div className="text-sm text-white">Clear skies</div>
-      </div>
-      
-      <div className="mt-4 pt-4 border-t border-white">
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div>
-            <p className="text-white text-xs">Humidity</p>
-            <p className="text-white font-medium">45%</p>
-          </div>
-          <div>
-            <p className="text-white text-xs">Wind</p>
-            <p className="text-white font-medium">5 mph</p>
-          </div>
-          <div>
-            <p className="text-white text-xs">Feels Like</p>
-            <p className="text-white font-medium">72°</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
   );
 }

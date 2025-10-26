@@ -48,3 +48,7 @@ bun.lockb
 
 # LangGraph API
 .langgraph_api
+# Ignore environment files with API keys
+.env
+.env.local
+agent/.env
