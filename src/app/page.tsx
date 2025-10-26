@@ -197,6 +197,11 @@ function MemeGeneratorContent() {
                 <div className="grid md:grid-cols-2 gap-6">
                   {/* Meme Image */}
                   <div className="relative">
+                    {/* Confidence Badge */}
+                    <div className="absolute -top-3 -right-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2 rounded-lg font-semibold text-sm shadow-lg z-10">
+                      {meme.confidence}% Confident
+                    </div>
+                    
                     <div className="bg-slate-100 rounded-lg overflow-hidden border-2 border-slate-300 aspect-square flex items-center justify-center">
                       {meme.image_url ? (
                         <img 
@@ -207,15 +212,16 @@ function MemeGeneratorContent() {
                       ) : (
                         <div className="text-center p-8">
                           <div className="text-6xl mb-4">🎨</div>
-                          <div className="text-gray-600 font-bold">Meme Image</div>
-                          <div className="text-sm text-gray-500 mt-2">{meme.caption}</div>
+                          <div className="text-gray-600 font-bold">Generating...</div>
                         </div>
                       )}
                     </div>
                     
-                    {/* Confidence Badge */}
-                    <div className="absolute -top-3 -right-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2 rounded-lg font-semibold text-sm shadow-lg">
-                      {meme.confidence}% Confident
+                    {/* Caption Below Image */}
+                    <div className="mt-3 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                      <p className="text-slate-900 text-center font-semibold text-base leading-snug">
+                        &quot;{meme.caption}&quot;
+                      </p>
                     </div>
                   </div>
 
@@ -223,16 +229,9 @@ function MemeGeneratorContent() {
                   <div className="flex flex-col justify-between">
                     <div>
                       <h3 className="text-lg font-semibold text-slate-700 mb-2">
-                        Caption
-                      </h3>
-                      <p className="text-lg font-medium text-slate-900 bg-slate-50 p-4 rounded-lg border border-slate-200 mb-6">
-                        &quot;{meme.caption}&quot;
-                      </p>
-
-                      <h3 className="text-lg font-semibold text-slate-700 mb-2">
                         AI Explanation
                       </h3>
-                      <p className="text-slate-700 bg-indigo-50 p-4 rounded-lg border border-indigo-200 italic text-sm leading-relaxed">
+                      <p className="text-slate-700 bg-indigo-50 p-4 rounded-lg border border-indigo-200 italic text-sm leading-relaxed mb-6">
                         {meme.explanation}
                       </p>
                     </div>
