@@ -195,76 +195,69 @@ function MemeGeneratorContent() {
                 className="bg-white rounded-2xl shadow-xl p-6 border border-slate-200"
               >
                 <div className="grid md:grid-cols-2 gap-6">
-                  {/* Meme Image */}
+                  {/* Meme Image with Caption Overlay */}
                   <div className="relative">
                     {/* Confidence Badge */}
-                    <div className="absolute -top-3 -right-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2 rounded-lg font-semibold text-sm shadow-lg z-10">
+                    <div className="absolute -top-3 -right-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2 rounded-lg font-semibold text-sm shadow-lg z-20">
                       {meme.confidence}% Confident
                     </div>
                     
-                    <div className="bg-slate-100 rounded-lg overflow-hidden border-2 border-slate-300 aspect-square flex items-center justify-center">
+                    <div className="bg-slate-900 rounded-lg overflow-hidden border-2 border-slate-300 aspect-square flex items-center justify-center relative">
                       {meme.image_url ? (
-                        <img 
-                          src={meme.image_url} 
-                          alt="Generated meme" 
-                          className="w-full h-full object-cover"
-                        />
+                        <>
+                          <img 
+                            src={meme.image_url} 
+                            alt="Generated meme" 
+                            className="w-full h-full object-cover"
+                          />
+                          {/* Caption at Bottom - Classic Meme Style */}
+                          <div className="absolute bottom-0 left-0 right-0 p-6 pointer-events-none">
+                            <p 
+                              className="text-white font-black text-2xl md:text-3xl uppercase leading-tight text-center"
+                              style={{
+                                textShadow: '3px 3px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 3px 3px 6px rgba(0,0,0,0.8)',
+                                fontFamily: 'Impact, Arial Black, sans-serif'
+                              }}
+                            >
+                              {meme.caption}
+                            </p>
+                          </div>
+                        </>
                       ) : (
                         <div className="text-center p-8">
                           <div className="text-6xl mb-4">🎨</div>
-                          <div className="text-gray-600 font-bold">Generating...</div>
+                          <div className="text-white font-bold">Generating...</div>
                         </div>
                       )}
                     </div>
-                    
-                    {/* Caption Below Image */}
-                    <div className="mt-3 bg-slate-50 p-4 rounded-lg border border-slate-200">
-                      <p className="text-slate-900 text-center font-semibold text-base leading-snug">
-                        &quot;{meme.caption}&quot;
-                      </p>
-                    </div>
                   </div>
 
-                  {/* Meme Details */}
-                  <div className="flex flex-col justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold text-slate-700 mb-2">
-                        AI Explanation
-                      </h3>
-                      <p className="text-slate-700 bg-indigo-50 p-4 rounded-lg border border-indigo-200 italic text-sm leading-relaxed mb-6">
-                        {meme.explanation}
+                  {/* Rating Section */}
+                  <div className="flex flex-col justify-center items-center">
+                    <h3 className="text-lg font-semibold text-slate-700 mb-3">
+                      Rate this meme
+                    </h3>
+                    <div className="flex gap-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          onClick={() => handleRating(index, star)}
+                          className={`text-4xl transition-transform hover:scale-125 ${
+                            (meme.rating || 0) >= star ? 'opacity-100' : 'opacity-25'
+                          }`}
+                        >
+                          ⭐
+                        </button>
+                      ))}
+                    </div>
+                    {meme.rating && meme.rating > 0 && (
+                      <p className="text-sm text-slate-500 mt-3 text-center italic">
+                        {meme.rating >= 4 
+                          ? "AI: \"See? I understand humor!\" 🤖"
+                          : "AI: \"I'll try a different style next time!\" 🤔"
+                        }
                       </p>
-                    </div>
-
-                    {/* Rating */}
-                    <div className="mt-6">
-                      <h3 className="text-sm font-semibold text-slate-700 mb-2">
-                        Rate this meme
-                      </h3>
-                      <div className="flex gap-1">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <button
-                            key={star}
-                            onClick={() => handleRating(index, star)}
-                            className={`text-3xl transition-transform hover:scale-110 ${
-                              (meme.rating || 0) >= star ? 'opacity-100' : 'opacity-25'
-                            }`}
-                          >
-                            ⭐
-                          </button>
-                        ))}
-                      </div>
-                      {meme.rating && meme.rating < 3 && (
-                        <p className="text-xs text-slate-500 mt-2 italic">
-                          AI: &quot;I&apos;ll try different humor next time!&quot;
-                        </p>
-                      )}
-                      {meme.rating && meme.rating >= 4 && (
-                        <p className="text-xs text-slate-500 mt-2 italic">
-                          AI: &quot;Glad you enjoyed it!&quot;
-                        </p>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>

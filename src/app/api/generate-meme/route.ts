@@ -51,11 +51,12 @@ ONLY output the caption text, nothing else. No quotes.`;
 
     const cleanCaption = caption.trim().replace(/^["']|["']$/g, '');
 
-    // Step 2: Generate meme image using Flux (fast image model)
-    const imagePrompt = `A funny meme image about: ${topic}. 
-Style: ${humor_mode.replace(/_/g, ' ')}. 
-Make it look like a classic internet meme - simple, bold, and meme-worthy. 
-Visual style: high contrast, bold colors, meme aesthetic.`;
+    // Step 2: Generate meme image using Flux (NO TEXT - we'll add caption ourselves)
+    const imagePrompt = `A meme-style photo about: ${topic}. 
+Visual style: ${humor_mode.replace(/_/g, ' ')}.
+High quality photo with no text, no words, no captions. Just the image.
+Meme-worthy composition, expressive, suitable for adding text overlay.
+Professional photography, clear subject, good for memes.`;
 
     const imageOutput = await replicate.run(
       "black-forest-labs/flux-schnell" as any,
